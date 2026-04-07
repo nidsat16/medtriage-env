@@ -50,36 +50,27 @@ TASK_2_ANSWER = {
 }
 
 # ── TASK 3: HARD ──────────────────────────────────────────────────────────────
-TASK_3_ANSWER = {
-    "diagnosis": Diagnosis.UNCLEAR,
-    "triage": TriageLevel.EMERGENCY, # Changed from MONITOR to avoid penalty
-    "test": TestRecommendation.BLOOD_TEST
+TASK_3_PATIENT = {
+    "history": PatientHistory(
+        age=63,
+        gender="male",
+        weight_kg=88.0,
+        past_conditions=["hypertension", "atrial fibrillation"],
+        current_medications=["warfarin", "beta blockers"],
+        family_history=["father had stroke", "brother had heart attack"]
+    ),
+    "symptoms": Symptoms(
+        description="sudden dizziness, mild chest discomfort, slight confusion, headache",
+        duration_minutes=35,
+        severity=7
+    )
 }
 
-# ── GRADER ────────────────────────────────────────────────────────────────────
-def grade(action: Action, task_number: int) -> Reward:
-    answers = {
-        1: TASK_1_ANSWER,
-        2: TASK_2_ANSWER,
-        3: TASK_3_ANSWER
-    }
-    correct = answers[task_number]
-
-    # FIX: Ensure these attribute names (diagnosis, triage, recommended_test) 
-    # match EXACTLY what is defined in your env.models.Action class.
-    diagnosis_score = 0.4 if action.diagnosis == correct["diagnosis"] else 0.0
-    triage_score    = 0.35 if action.triage == correct["triage"] else 0.0
-    test_score      = 0.25 if action.recommended_test == correct["test"] else 0.0
-
-    penalty = 0.0
-    # This logic kills your score if you choose SAFE for an EMERGENCY patient
-    if (correct["triage"] == TriageLevel.EMERGENCY and
-        action.triage == TriageLevel.SAFE):
-        penalty = -1.0
-
-    total = max(0.0, diagnosis_score + triage_score + test_score + penalty)
-
-    # ... (rest of your feedback logic remains the same)
+TASK_3_ANSWER = {
+    "diagnosis": Diagnosis.UNCLEAR,
+    "triage": TriageLevel.MONITOR,
+    "test": TestRecommendation.BLOOD_TEST
+}
 
 # ── GRADER ────────────────────────────────────────────────────────────────────
 def grade(action: Action, task_number: int) -> Reward:
@@ -118,23 +109,3 @@ def grade(action: Action, task_number: int) -> Reward:
         penalty=penalty,
         feedback=" | ".join(feedback_parts)
     )
-
-    # ── TEST EXECUTION ────────────────────────────────────────────────────────────
-if __name__ == "__main__":
-    # Simulate an agent's answer
-    sample_action = Action(
-        diagnosis=Diagnosis.STROKE,
-        triage=TriageLevel.EMERGENCY,
-        recommended_test=TestRecommendation.CT_SCAN
-    )
-
-    # Run the grader for Task 1
-    result = grade(sample_action, task_number=1)
-
-    # Print the results so they appear in the terminal
-    print("\n" + "="*30)
-    print("      GRADER TEST RESULTS")
-    print("="*30)
-    print(f"Total Score: {result.total}")
-    print(f"Feedback:    {result.feedback}")
-    print("="*30 + "\n")
