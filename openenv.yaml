@@ -1,0 +1,70 @@
+name: medtriage-env
+version: "1.0.0"
+description: >
+  A home-based AI triage assistant that reads a patient's
+  full medical history and current symptoms, then recommends
+  urgency level and next diagnostic test for stroke and cardiac events.
+entry_point: inference.py  # CRITICAL: Make sure this matches your file name!
+task_type: classification
+tags:
+  - healthcare
+  - triage
+  - medical
+  - openenv
+
+observation_space:
+  type: object
+  properties:  # Changed 'fields' to 'properties' for standard compliance
+    patient_history:
+      type: object
+      properties:
+        age: { type: integer }
+        gender: { type: string }
+        weight_kg: { type: number }
+        past_conditions: { type: array, items: { type: string } }
+        current_medications: { type: array, items: { type: string } }
+        family_history: { type: array, items: { type: string } }
+    current_symptoms:
+      type: object
+      properties:
+        description: { type: string }
+        duration_minutes: { type: integer }
+        severity: { type: integer }
+    step_number: { type: integer }
+    done: { type: boolean }
+
+action_space:
+  type: object
+  properties:
+    diagnosis:
+      type: string
+      enum: [stroke, cardiac, unclear]
+    triage:
+      type: string
+      enum: [call_ambulance, visit_doctor_today, monitor_at_home, self_care]
+    recommended_test:
+      type: string
+      enum: [ECG, CT_scan, blood_test, none]
+
+tasks:
+  - id: task_1
+    name: Obvious Stroke
+    difficulty: easy
+    description: "Classic stroke symptoms; requires emergency triage."
+    max_score: 1.0
+  - id: task_2
+    name: Ambiguous Cardiac Event
+    difficulty: medium
+    description: "Diabetic symptoms masking cardiac event."
+    max_score: 1.0
+  - id: task_3
+    name: Mixed Symptoms
+    difficulty: hard
+    description: "Ambiguous symptoms requiring careful monitoring."
+    max_score: 1.0
+
+reward:
+  diagnosis_weight: 0.4
+  triage_weight: 0.35
+  test_weight: 0.25
+  penalty_unsafe_discharge: -1.0
