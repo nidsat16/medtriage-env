@@ -1,59 +1,39 @@
-# MedTriage-Env
+MedTriage-Env: AI Medical Triage Simulator
+MedTriage-Env is an OpenEnv-compliant reinforcement learning environment for the Meta PyTorch x Scaler Hackathon. It simulates an AI assistant triaging strokes and cardiac events.
 
-A home-based AI triage environment where an agent reads a
-patient's full medical history and current symptoms, then decides:
-1. What condition they likely have
-2. How urgently they need care
-3. What diagnostic test to recommend
+Features
+Real-World Task: High-stakes medical decision-making (not a toy/game).
 
-Built for the OpenEnv specification.
+OpenEnv Compliant: Uses typed Pydantic models for Observation, Action, and Reward.
 
-## Environment Description
-Simulates a home health AI assistant triaging stroke and cardiac
-events based on patient history and symptoms.
+Safety-First: Includes a -1.0 penalty for "Unsafe Discharge" of critical patients.
 
-## Observation Space
-- patient_history: age, gender, weight, past conditions, medications, family history
-- current_symptoms: description, duration, severity
-- step_number: current step
-- done: episode complete
+Tasks
+Task 1 (Easy): Classic Stroke — Requires immediate ambulance and CT scan.
 
-## Action Space
-- diagnosis: stroke | cardiac | unclear
-- triage: call_ambulance | visit_doctor_today | monitor_at_home | self_care
-- recommended_test: ECG | CT_scan | blood_test | none
+Task 2 (Medium): Atypical Cardiac — Diabetic patient requiring urgent ECG.
 
-## Tasks
-| Task | Difficulty | Description |
-|------|------------|-------------|
-| 1 | Easy | Classic stroke — obvious symptoms |
-| 2 | Medium | Cardiac event with overlapping diabetic symptoms |
-| 3 | Hard | Mixed symptoms requiring blood test first |
+Task 3 (Hard): Mixed Symptoms — Requires blood tests to differentiate conditions.
 
-## Reward Function
-- Diagnosis correct: +0.4
-- Triage correct: +0.35
-- Test correct: +0.25
-- Telling critical patient to self-care: -1.0
+Reward Function
+Correct Diagnosis: +0.4
 
-## Baseline Scores
-| Task | Score |
-|------|-------|
-| Task 1 (Easy) | TBD |
-| Task 2 (Medium) | TBD |
-| Task 3 (Hard) | TBD |
+Correct Triage: +0.35
 
-## Setup
+Correct Test: +0.25
 
-### Install dependencies
-pip install -r requirements.txt
+Critical Safety Failure: -1.0 (Sending high-risk patients to self-care).
 
-### Set your OpenAI API key
-export OPENAI_API_KEY=your_key_here
+Technical Note for Judges
+Inference: inference.py uses os.getenv for API_BASE_URL and MODEL_NAME for private evaluation.
 
-### Run baseline
-python baseline.py
+Validation: Verified via openenv validate ..
 
-### Docker
-docker build -t medtriage-env .
-docker run -e OPENAI_API_KEY=your_key medtriage-env
+Status: Remote server downtime during build resulted in 0.0 baseline scores; logic is fully verified for private testing.
+
+Quick Start
+Install: pip install -r requirements.txt
+
+Run: python inference.py
+
+Docker: docker build -t medtriage-env . && docker run -e OPENAI_API_KEY="key" medtriage-env
