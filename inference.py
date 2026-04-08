@@ -8,7 +8,8 @@ from models import Action, Diagnosis, TriageLevel, TestRecommendation
 
 # ── REQUIRED ENVIRONMENT VARIABLES ──────────────────────────────────────────
 # Using variables allows the portal to redirect the API during grading
-API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/v1")
+
+API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co/hf-inference/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct")
 HF_TOKEN = os.getenv("HF_TOKEN")
 
