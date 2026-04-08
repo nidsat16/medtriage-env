@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from openai import OpenAI
 from environment import MedTriageEnv
 from tasks import grade, TASK_1_PATIENT, TASK_2_PATIENT, TASK_3_PATIENT
@@ -100,7 +101,7 @@ if __name__ == "__main__":
     run_evaluation()
 
 
-import time
+
 time.sleep(300) # This keeps the container "Running" for 5 minutes
 
 
