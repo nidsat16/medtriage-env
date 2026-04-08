@@ -100,4 +100,8 @@ if __name__ == "__main__":
     run_evaluation()
 
 
+import time
+time.sleep(300) # This keeps the container "Running" for 5 minutes
+
+
     
