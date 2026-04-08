@@ -1,4 +1,4 @@
-from env.models import (
+from models import (
     PatientHistory, Symptoms,
     Action, Reward, Diagnosis, TriageLevel, TestRecommendation
 )

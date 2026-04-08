@@ -1,5 +1,5 @@
 import random
-from env.models import (
+from models import (
     PatientHistory, Symptoms, Observation,
     Action, Reward, Diagnosis, TriageLevel, TestRecommendation
 )

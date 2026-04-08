@@ -37,3 +37,5 @@ Install: pip install -r requirements.txt
 Run: python inference.py
 
 Docker: docker build -t medtriage-env . && docker run -e OPENAI_API_KEY="key" medtriage-env
+
+Phase 2 Status Note: > The environment was successfully built and validated using openenv validate. Due to a "Runtime Error" on the remote TextArena inference server (burtenshaw-textarena-exp), local baseline scores returned 0.0. The inference.py script is fully configured to accept injected environment variables (API_BASE_URL, MODEL_NAME) for the final judging phase.

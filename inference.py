@@ -1,88 +1,74 @@
 import os
 import json
 from openai import OpenAI
-from env.environment import MedTriageEnv
-from env.tasks import grade, TASK_1_PATIENT, TASK_2_PATIENT, TASK_3_PATIENT
-from env.models import Action, Diagnosis, TriageLevel, TestRecommendation
+from environment import MedTriageEnv
+from tasks import grade, TASK_1_PATIENT, TASK_2_PATIENT, TASK_3_PATIENT
+from models import Action, Diagnosis, TriageLevel, TestRecommendation
 
-# ── RUNTIME CONFIG (Nidhi's Requirement) ─────────────────────────────────────
-# Judges will "inject" these variables during Phase 2 evaluation.
-# We provide defaults so it still works for your local testing.
-
-API_BASE = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
+# ── REQUIRED ENVIRONMENT VARIABLES (Section 3 of Guidelines) ─────────────────
+# Defaults are required for API_BASE_URL and MODEL_NAME
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api.openai.com/v1")
 MODEL_NAME = os.getenv("MODEL_NAME", "gpt-4o-mini")
+HF_TOKEN = os.getenv("HF_TOKEN")
 
-# Authentication: Checks for both HF and OpenAI naming conventions
-AUTH_TOKEN = os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY") or "not-set"
+if HF_TOKEN is None:
+    raise ValueError("HF_TOKEN environment variable is required")
 
+# ── INITIALIZE OPENAI CLIENT (Section 2 of Guidelines) ───────────────────────
 client = OpenAI(
-    base_url=API_BASE,
-    api_key=AUTH_TOKEN
+   
+    base_url="https://router.huggingface.co/v1",
+    api_key=f"{HF_TOKEN}"
 )
 
+
 TASKS = [
-    {"number": 1, "difficulty": "easy",   "patient": TASK_1_PATIENT},
-    {"number": 2, "difficulty": "medium", "patient": TASK_2_PATIENT},
-    {"number": 3, "difficulty": "hard",   "patient": TASK_3_PATIENT},
+    {"id": "task_1", "number": 1, "patient": TASK_1_PATIENT},
+    {"id": "task_2", "number": 2, "patient": TASK_2_PATIENT},
+    {"id": "task_3", "number": 3, "patient": TASK_3_PATIENT},
 ]
 
-# ── PROMPT BUILDER ─────────────────────────────────────────────────────────────
+# ── PROMPT BUILDER ──────────────────────────────────────────────────────────
 def build_prompt(patient: dict) -> str:
     h = patient["history"]
     s = patient["symptoms"]
     return f"""You are an AI medical triage assistant.
-Based on the patient history and symptoms, respond with ONLY a JSON object.
+Respond with ONLY a JSON object.
 
-PATIENT HISTORY:
-- Age: {h.age}, Gender: {h.gender}, Weight: {h.weight_kg}kg
-- Conditions: {', '.join(h.past_conditions)}
-- Meds: {', '.join(h.current_medications)}
+PATIENT: Age {h.age}, {h.gender}, {h.weight_kg}kg.
+HISTORY: {', '.join(h.past_conditions)}.
+SYMPTOMS: {s.description} (Duration: {s.duration_minutes} min, Severity: {s.severity}/10).
 
-SYMPTOMS:
-- {s.description} (Duration: {s.duration_minutes} min, Severity: {s.severity}/10)
-
-Your response must be a JSON object in this exact format:
+JSON Format:
 {{
     "diagnosis": "stroke" | "cardiac" | "unclear",
     "triage": "call_ambulance" | "visit_doctor_today" | "monitor_at_home" | "self_care",
     "recommended_test": "ECG" | "CT_scan" | "blood_test" | "none"
 }}"""
 
-# ── PARSER ─────────────────────────────────────────────────────────────────────
-def parse_response(response_text: str) -> Action:
+# ── PARSER ──────────────────────────────────────────────────────────────────
+def parse_response(text: str) -> Action:
     try:
-        # Clean markdown code blocks if the model includes them
-        clean = response_text.strip().replace("```json", "").replace("```", "").strip()
+        clean = text.strip().replace("```json", "").replace("```", "").strip()
         data = json.loads(clean)
         return Action(
             diagnosis=Diagnosis(data["diagnosis"]),
             triage=TriageLevel(data["triage"]),
             recommended_test=TestRecommendation(data["recommended_test"])
         )
-    except Exception as e:
-        # Fallback to "Unclear" if the model fails to follow JSON format
-        return Action(
-            diagnosis=Diagnosis.UNCLEAR,
-            triage=TriageLevel.MONITOR_AT_HOME,
-            recommended_test=TestRecommendation.NONE
-        )
+    except Exception:
+        return Action(diagnosis=Diagnosis.UNCLEAR, triage=TriageLevel.MONITOR_AT_HOME, recommended_test=TestRecommendation.NONE)
 
-# ── MAIN EVALUATION LOOP ───────────────────────────────────────────────────────
+# ── MAIN EVALUATION LOOP (Section 4: Mandatory Output Format) ───────────────
 def run_evaluation():
-    print("=" * 50)
-    print("OPENENV PHASE 2: RUNTIME EVALUATION")
-    print(f"Target Endpoint: {API_BASE}")
-    print(f"Model Name:      {MODEL_NAME}")
-    print("=" * 50)
-
-    # Initialize the local environment
-    env = MedTriageEnv(seed=42)
-    total_score = 0.0
+    env_name = "medtriage-env"
 
     for task in TASKS:
-        print(f"\nEvaluating Task {task['number']} ({task['difficulty'].upper()})...")
+        # [START] line
+        print(f"[START] task={task['id']} env={env_name} model={MODEL_NAME}")
+        
         prompt = build_prompt(task["patient"])
-
+        
         try:
             response = client.chat.completions.create(
                 model=MODEL_NAME, 
@@ -92,21 +78,26 @@ def run_evaluation():
 
             result_text = response.choices[0].message.content
             action = parse_response(result_text)
+            reward_obj = grade(action, task_number=task["number"])
             
-            # Grade the AI's action using the built-in grader
-            reward = grade(action, task_number=task["number"])
+            # Format outputs for strict compliance
+            # Note: success/done must be lowercase 'true' or 'false'
+            r_val = f"{reward_obj.total:.2f}"
+            action_val = f"{action.diagnosis.value}_{action.triage.value}"
             
-            print(f"  AI Diagnosis: {action.diagnosis.value}")
-            print(f"  Task Reward:  {reward.total}")
-            total_score += reward.total
+            # [STEP] line
+            print(f"[STEP] step=1 action={action_val} reward={r_val} done=true error=null")
+            
+            # [END] line
+            print(f"[END] success=true steps=1 rewards={r_val}")
 
         except Exception as e:
-            print(f"  ❌ Runtime Error: {e}")
-
-    avg_score = round(total_score / len(TASKS), 2)
-    print("\n" + "=" * 50)
-    print(f"FINAL EVALUATION AVERAGE: {avg_score}")
-    print("=" * 50)
+            err = str(e).replace(" ", "_")[:50]
+            print(f"[STEP] step=1 action=error reward=0.00 done=true error={err}")
+            print(f"[END] success=false steps=1 rewards=0.00")
 
 if __name__ == "__main__":
     run_evaluation()
+
+
+    

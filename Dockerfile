@@ -2,18 +2,15 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# 1. Ensure requirements are installed first (standard practice)
+# Install dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 2. Copy the rest of the project
+# Copy all project files
 COPY . .
 
-# 3. Environment Variables
+# CRITICAL: Tell Python to look in the current directory for modules
+ENV PYTHONPATH=/app
 
-ENV OPENAI_API_KEY=""
-ENV API_BASE_URL=""
-ENV MODEL_NAME=""
-
-
+# Run the script
 CMD ["python", "inference.py"]
