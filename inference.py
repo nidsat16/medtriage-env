@@ -16,10 +16,10 @@ if HF_TOKEN is None:
     raise ValueError("HF_TOKEN environment variable is required")
 
 # ── INITIALIZE OPENAI CLIENT (Section 2 of Guidelines) ───────────────────────
+# Updated code
 client = OpenAI(
-   
-    base_url="https://router.huggingface.co/v1",
-    api_key=f"{HF_TOKEN}"
+    base_url=API_BASE_URL,
+    api_key=HF_TOKEN
 )
 
 
