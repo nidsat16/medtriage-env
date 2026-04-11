@@ -95,15 +95,12 @@ def run_server():
             pass
     httpd = http.server.HTTPServer(("0.0.0.0", 7860), Handler)
     httpd.serve_forever()
+
 if __name__ == "__main__":
-    # Start HTTP server in background
     t = threading.Thread(target=run_server, daemon=True)
     t.start()
     print("HTTP server started on port 7860")
-    
-    # Run evaluation
     run_evaluation()
     print("Evaluation complete. Keeping container alive...")
-    
     while True:
         time.sleep(3600)
